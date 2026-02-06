@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IVY AI 에이전트 - 관리자 콘솔</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s;
+            position: relative;
+        }
+
+        .sidebar.collapsed {
+            width: 70px;
+        }
+
+        .logo-section {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 10;
+            transition: all 0.3s;
+        }
+
+        .sidebar-toggle:hover {
+            background: #f9fafb;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .sidebar-toggle svg {
+            width: 16px;
+            height: 16px;
+            color: #6b7280;
+            transition: transform 0.3s;
+        }
+
+        .sidebar.collapsed .sidebar-toggle svg {
+            transform: rotate(180deg);
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .nav-section {
+            padding: 4px 0;
+        }
+
+        .nav-group {
+            margin: 0px 12px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .nav-group-header {
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+            border-radius: 8px;
+        }
+
+        .nav-group-header:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-group-header.active {
+            background: rgba(255, 255, 255, 0.15);
+            font-weight: 600;
+        }
+
+        .nav-group-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .menu-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            font-size: 18px;
+        }
+
+        .menu-title {
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .nav-expand-icon {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s;
+            font-size: 12px;
+        }
+
+        .nav-group.expanded .nav-expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .nav-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: rgba(0, 0, 0, 0.1);
+            margin-top: 2px;
+            border-radius: 6px;
+        }
+
+        .nav-group.expanded .nav-submenu {
+            max-height: 1000px;
+        }
+
+        .nav-subitem {
+            padding: 8px 16px 8px 48px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .nav-subitem:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-subitem.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-weight: 500;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .page-header {
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: #64748b;
+            font-size: 15px;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+            padding: 0 24px 24px 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .project-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+        .project-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .project-card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .project-card-date {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .project-card-stats {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 16px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .project-card-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .card-action-btn {
+            padding: 14px 12px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            color: #374151;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .card-action-btn:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .btn-icon {
+            font-size: 18px;
+        }
+
+        .star-icon {
+            font-size: 24px;
+            color: #e5e7eb;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .star-icon:hover,
+        .star-icon.active {
+            color: #fbbf24;
+        }
+
+        /* 설정 모달 스타일 */
+        .settings-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s;
+        }
+
+        .settings-modal-overlay.active {
+            display: flex;
+        }
+
+        .settings-modal-container {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 1100px;
+            height: 85vh;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            animation: slideUp 0.3s;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .settings-modal-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: white;
+        }
+
+        .settings-tab {
+            padding: 10px 20px;
+            background: white;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .settings-tab.active {
+            color: #1f2937;
+            font-weight: 600;
+            border-bottom-color: #1f2937;
+        }
+
+        .settings-modal-close {
+            margin-left: auto;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: background 0.2s;
+            font-size: 20px;
+            color: #64748b;
+        }
+
+        .settings-modal-close:hover {
+            background: #f1f5f9;
+        }
+
+        .settings-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            background: #fafafa;
+        }
+
+        .settings-content-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .settings-section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+
+        .settings-section-desc {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 32px;
+        }
+
+        .settings-placeholder-box {
+            background: white;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 80px 40px;
+            text-align: center;
+        }
+
+        .settings-placeholder-icon {
+            font-size: 64px;
+            color: #d1d5db;
+            margin-bottom: 16px;
+        }
+
+        .settings-placeholder-text {
+            font-size: 15px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo-section">
+                <div class="logo-text">IVY AI 에이전트</div>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-group">
+                    <div class="nav-group-header">
+                        <div class="nav-group-title">
+                            <span class="menu-icon">💬</span>
+                            <span class="menu-title">챗봇</span>
+                        </div>
+                        <span class="nav-expand-icon">▼</span>
+                    </div>
+                    <div class="nav-submenu">
+                        <div class="nav-subitem active" onclick="showPage('projects')">프로젝트 현황</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-group">
+                    <div class="nav-group-header">
+                        <div class="nav-group-title">
+                            <span class="menu-icon">📊</span>
+                            <span class="menu-title">통계</span>
+                        </div>
+                        <span class="nav-expand-icon">▼</span>
+                    </div>
+                    <div class="nav-submenu">
+                        <div class="nav-subitem" onclick="showPage('dashboard')">대시보드 및 사용자분석</div>
+                        <div class="nav-subitem" onclick="showPage('scenario-operation')">시나리오 운영</div>
+                        <div class="nav-subitem" onclick="showPage('data-tools')">데이터 도구</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-group">
+                    <div class="nav-group-header">
+                        <div class="nav-group-title">
+                            <span class="menu-icon">📋</span>
+                            <span class="menu-title">이용내역</span>
+                        </div>
+                        <span class="nav-expand-icon">▼</span>
+                    </div>
+                    <div class="nav-submenu">
+                        <div class="nav-subitem" onclick="showPage('login-history')">로그인 내역</div>
+                        <div class="nav-subitem">배포 내역</div>
+                        <div class="nav-subitem">인증 내역</div>
+                        <div class="nav-subitem">평가 내역</div>
+                        <div class="nav-subitem">세션 내역</div>
+                        <div class="nav-subitem">싱크 내역</div>
+                        <div class="nav-subitem">참여 내역</div>
+                        <div class="nav-subitem">설문 내역</div>
+                        <div class="nav-subitem">AI 약관 동의 내역</div>
+                        <div class="nav-subitem">전송 내역</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-group">
+                    <div class="nav-group-header">
+                        <div class="nav-group-title">
+                            <span class="menu-icon">⚙️</span>
+                            <span class="menu-title">AI 관리</span>
+                        </div>
+                        <span class="nav-expand-icon">▼</span>
+                    </div>
+                    <div class="nav-submenu">
+                        <div class="nav-subitem" onclick="showPage('developer-tools')">개발자 도구</div>
+                        <div class="nav-subitem">지식베이스</div>
+                        <div class="nav-subitem">인증 관리</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- 프로젝트 현황 페이지 -->
+            <div id="projects" class="page active">
+                <div class="page-header">
+                    <h1 class="page-title">프로젝트 현황</h1>
+                    <p class="page-subtitle">운영 중인 챗봇 프로젝트를 관리하세요</p>
+                </div>
+
+                <div class="projects-grid">
+                    <!-- 프로젝트 카드 1 -->
+                    <div class="project-card">
+                        <div class="project-card-header">
+                            <div>
+                                <div class="project-card-title">고객센터 챗봇</div>
+                                <div class="project-card-date">배포일: 2024-01-15</div>
+                            </div>
+                            <div class="star-icon" onclick="toggleStar(this, event)">☆</div>
+                        </div>
+                        
+                        <div class="project-card-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">12/1</div>
+                                <div class="stat-label">시나리오 수</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">미사용</div>
+                                <div class="stat-label">민사법</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="star-icon" onclick="toggleStar(this, event)">☆</div>
+                                <div class="stat-label">대표설정</div>
+                            </div>
+                        </div>
+
+                        <div class="project-card-actions">
+                            <button class="card-action-btn" onclick="showPage('scenario')">
+                                <span class="btn-icon">✏️</span>
+                                <span>시나리오 만들기</span>
+                            </button>
+                            <button class="card-action-btn" onclick="openSettingsModal()">
+                                <span class="btn-icon">⚙️</span>
+                                <span>시나리오 설정</span>
+                            </button>
+                            <button class="card-action-btn">
+                                <span class="btn-icon">📊</span>
+                                <span>챗봇 통계</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 프로젝트 카드 2 -->
+                    <div class="project-card">
+                        <div class="project-card-header">
+                            <div>
+                                <div class="project-card-title">쇼핑몰 상담봇</div>
+                                <div class="project-card-date">배포일: 2024-01-10</div>
+                            </div>
+                            <div class="star-icon" onclick="toggleStar(this, event)">☆</div>
+                        </div>
+                        
+                        <div class="project-card-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">8/2</div>
+                                <div class="stat-label">시나리오 수</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">미사용</div>
+                                <div class="stat-label">민사법</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="star-icon active" onclick="toggleStar(this, event)">★</div>
+                                <div class="stat-label">대표설정</div>
+                            </div>
+                        </div>
+
+                        <div class="project-card-actions">
+                            <button class="card-action-btn" onclick="showPage('scenario')">
+                                <span class="btn-icon">✏️</span>
+                                <span>시나리오 만들기</span>
+                            </button>
+                            <button class="card-action-btn" onclick="openSettingsModal()">
+                                <span class="btn-icon">⚙️</span>
+                                <span>시나리오 설정</span>
+                            </button>
+                            <button class="card-action-btn">
+                                <span class="btn-icon">📊</span>
+                                <span>챗봇 통계</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 프로젝트 카드 3 -->
+                    <div class="project-card">
+                        <div class="project-card-header">
+                            <div>
+                                <div class="project-card-title">예약 안내 봇</div>
+                                <div class="project-card-date">배포일: 2024-02-10</div>
+                            </div>
+                            <div class="star-icon" onclick="toggleStar(this, event)">☆</div>
+                        </div>
+                        
+                        <div class="project-card-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">15/3</div>
+                                <div class="stat-label">시나리오 수</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">사용중</div>
+                                <div class="stat-label">민사법</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="star-icon" onclick="toggleStar(this, event)">☆</div>
+                                <div class="stat-label">대표설정</div>
+                            </div>
+                        </div>
+
+                        <div class="project-card-actions">
+                            <button class="card-action-btn" onclick="showPage('scenario')">
+                                <span class="btn-icon">✏️</span>
+                                <span>시나리오 만들기</span>
+                            </button>
+                            <button class="card-action-btn" onclick="openSettingsModal()">
+                                <span class="btn-icon">⚙️</span>
+                                <span>시나리오 설정</span>
+                            </button>
+                            <button class="card-action-btn">
+                                <span class="btn-icon">📊</span>
+                                <span>챗봇 통계</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 프로젝트 카드 4 -->
+                    <div class="project-card">
+                        <div class="project-card-header">
+                            <div>
+                                <div class="project-card-title">HR 헬프데스크</div>
+                                <div class="project-card-date">배포일: 2023-12-20</div>
+                            </div>
+                            <div class="star-icon" onclick="toggleStar(this, event)">☆</div>
+                        </div>
+                        
+                        <div class="project-card-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">6/0</div>
+                                <div class="stat-label">시나리오 수</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">미사용</div>
+                                <div class="stat-label">민사법</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="star-icon" onclick="toggleStar(this, event)">☆</div>
+                                <div class="stat-label">대표설정</div>
+                            </div>
+                        </div>
+
+                        <div class="project-card-actions">
+                            <button class="card-action-btn" onclick="showPage('scenario')">
+                                <span class="btn-icon">✏️</span>
+                                <span>시나리오 만들기</span>
+                            </button>
+                            <button class="card-action-btn" onclick="openSettingsModal()">
+                                <span class="btn-icon">⚙️</span>
+                                <span>시나리오 설정</span>
+                            </button>
+                            <button class="card-action-btn">
+                                <span class="btn-icon">📊</span>
+                                <span>챗봇 통계</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 프로젝트 생성 카드 -->
+                    <div class="project-card" style="border: 2px dashed #cbd5e1; background: #f9fafb; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px;"onclick="openCreateProjectModal()">
+                        <div style="width: 64px; height: 64px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                            <span style="font-size: 32px; color: #3b82f6;">+</span>
+                        </div>
+                        <div style="font-size: 18px; font-weight: 600; color: #1f2937; margin-bottom: 8px;">프로젝트 생성</div>
+                        <div style="font-size: 14px; color: #6b7280; text-align: center;">새로운 챗봇 프로젝트를<br>시작하세요</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 시나리오 편집 페이지 -->
+            <div id="scenario" class="page">
+                <!-- 전체 캔버스 배경 -->
+                <div style="width: 100%; height: 100vh; background: #fafafa; position: relative; overflow: hidden;">
+                    
+                    <!-- 상단 플로팅 툴바 -->
+                    <div style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 1350px; background: white; padding: 12px 24px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: flex; gap: 16px; align-items: center; z-index: 100;">
+                        <button onclick="showPage('projects')" style="padding: 6px 12px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; color: #6b7280;">
+                            <span>←</span>
+                            <span>뒤로가기</span>
+                        </button>
+                        <div style="width: 1px; height: 20px; background: #e5e7eb;"></div>
+                        <select style="padding: 6px 12px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; cursor: pointer; min-width: 300px;">
+                            <option>신규 테스트</option>
+                        </select>
+                        <!--<button style="padding: 6px 12px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; cursor: pointer;">내역 ⓘ</button> -->
+                        <button style="padding: 6px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">블럭 검색 🔍</button>
+                        <div style="position: relative; left: 410px; width: 1px; height: 20px; background: #e5e7eb;"></div>
+                        <button style="position: relative; left: 410px; padding: 6px 12px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; cursor: pointer;">⚙️ 설정</button>
+                        <button style="position: relative; left: 410px; padding: 6px 12px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; cursor: pointer;">▶️ 미리보기</button>
+                        <button style="position: relative; left: 410px; padding: 8px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer;">💾 배포하기</button>
+                    </div>
+
+                    <!-- 왼쪽 플로팅 시나리오 패널 -->
+                    <div style="position: absolute; left: 100px; top: 130px; width: 320px; max-height: calc(100vh - 140px); background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); overflow: hidden; display: flex; flex-direction: column; z-index: 90;">
+                        <!-- 시나리오 탭 헤더 -->
+                        <div style="padding: 16px; background: #f0f9ff; border-bottom: 1px solid #e5e7eb;">
+                            <div style="font-size: 15px; font-weight: 600; color: #3b82f6; text-align: center;">시나리오</div>
+                        </div>
+
+                        <!-- 스크롤 가능한 콘텐츠 영역 -->
+                        <div style="flex: 1; overflow-y: auto;">
+                            <!-- 활성 시나리오 보기 -->
+                            <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                                <div style="font-size: 13px; color: #6b7280;">활성 시나리오 보기 ⓘ</div>
+                            </div>
+
+                            <!-- 인사말 -->
+                            <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="font-size: 14px; font-weight: 500; color: #1f2937;">인사말 ⓘ</span>
+                                    <div style="width: 20px; height: 20px; background: #3b82f6; border-radius: 50%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- 실제 메시지1 -->
+                            <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="font-size: 14px; font-weight: 500; color: #1f2937;">실제 메시지1</span>
+                                    <div style="width: 20px; height: 20px; background: #e5e7eb; border-radius: 50%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- 시작 메시지1 섹션 -->
+                            <div style="padding: 16px; height: 520px; border-bottom: 1px solid #e5e7eb;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                    <span style="font-size: 14px; font-weight: 500; color: #1f2937;">시작 메시지1 ⓘ</span>
+                                    <button style="padding: 4px 12px; border: 1px solid #3b82f6; background: white; color: #3b82f6; border-radius: 4px; font-size: 12px; cursor: pointer;">+ 시나리오 추가</button>
+                                </div>
+
+                                <!-- test 1 (활성) -->
+                                <div style="background: #f0f9ff; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #3b82f6;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                                        <span style="font-size: 14px; font-weight: 600; color: #1f2937;">test 1</span>
+                                        <div style="width: 16px; height: 16px; background: #3b82f6; border-radius: 50%;"></div>
+                                    </div>
+                                    <div style="font-size: 12px; color: #9ca3af; margin-bottom: 8px;">📝 상품 보기</div>
+                                    <button style="padding: 4px 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 500;">내용수정</button>
+                                </div>
+
+                                <!-- test 1_복사본 -->
+                                <div style="background: #f9fafb; padding: 12px; border-radius: 8px; border-left: 3px solid #e5e7eb;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                                        <span style="font-size: 14px; font-weight: 500; color: #1f2937;">test 1_복사본</span>
+                                        <div style="width: 16px; height: 16px; background: #e5e7eb; border-radius: 50%;"></div>
+                                    </div>
+                                    <div style="font-size: 12px; color: #9ca3af; margin-bottom: 8px;">📝 상품 보기</div>
+                                    <button style="padding: 4px 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 500;">내용수정</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 오른쪽 플로팅 도구 패널 (통합) -->
+                    <div style="position: absolute; right: 100px; top: 130px; width: 200px; max-height: calc(100vh - 140px); background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); overflow: hidden; display: flex; flex-direction: column; z-index: 90;">
+                        <!-- 스크롤 가능한 콘텐츠 영역 -->
+                        <div style="flex: 1; overflow-y: auto; padding: 16px;">
+                            <!-- 기본 메시지 카드 -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="font-size: 13px; font-weight: 600; color: #1f2937; margin-bottom: 12px;">기본 메시지 카드</div>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">💬</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">🖼️</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">📋</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">📺</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">🔗</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">🔧</button>
+                                </div>
+                            </div>
+
+                            <!-- 슬라이드 메시지 카드 -->
+                            <div style="margin-bottom: 20px; padding-top: 16px; border-top: 1px solid #f3f4f6;">
+                                <div style="font-size: 13px; font-weight: 600; color: #1f2937; margin-bottom: 12px;">슬라이드 메시지 카드</div>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">💬</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">📺</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">🎬</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">🎯</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">📝</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">📋</button>
+                                </div>
+                            </div>
+
+                            <!-- 연결블록 카드 -->
+                            <div style="margin-bottom: 20px; padding-top: 16px; border-top: 1px solid #f3f4f6;">
+                                <div style="font-size: 13px; font-weight: 600; color: #1f2937; margin-bottom: 12px;">연결블록 카드</div>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">🔗</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">🔀</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">🎯</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">🎬</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">🔧</button>
+                                    <button style="width: 100%; aspect-ratio: 1; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">📋</button>
+                                </div>
+                            </div>
+
+                            <!-- AI설정 토글 -->
+                            <div style="padding-top: 16px; border-top: 1px solid #f3f4f6;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 16px;">🤖</span>
+                                        <span style="font-size: 13px; font-weight: 600; color: #1f2937;">AI 설정</span>
+                                    </div>
+                                    <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                                        <input type="checkbox" checked style="opacity: 0; width: 0; height: 0;">
+                                        <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #22c55e; transition: 0.4s; border-radius: 24px;">
+                                            <span style="position: absolute; content: ''; height: 18px; width: 18px; right: 3px; bottom: 3px; background-color: white; transition: 0.4s; border-radius: 50%;"></span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 중앙 캔버스 툴바 -->
+                    <div style="position: absolute; top: 200px; left: 50%; transform: translateX(-50%); background: white; padding: 8px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; gap: 12px; align-items: center; z-index: 100;">
+                        <select style="padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; cursor: pointer;">
+                            <option>블럭 1 ⓘ</option>
+                        </select>
+                        <div style="display: flex; gap: 6px;">
+                            <button style="width: 28px; height: 28px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">✏️</button>
+                            <button style="width: 28px; height: 28px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">🖊️</button>
+                        </div>
+                        <button style="padding: 6px 12px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; cursor: pointer;">🔍 100%</button>
+                        <button style="width: 28px; height: 28px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">↻</button>
+                        <button style="padding: 6px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">저장</button>
+                        <button style="padding: 6px 12px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; cursor: pointer;">블럭 검색</button>
+                    </div>
+
+                    <!-- 플로우 차트 영역 (중앙) -->
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                        <!-- 시나리오 시작 노드 -->
+                        <div style="background: white; padding: 12px 32px; border-radius: 24px; border: 2px solid #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);">
+                            <div style="font-size: 14px; color: #3b82f6; font-weight: 500;">시나리오 시작</div>
+                        </div>
+
+                        <!-- 연결선 -->
+                        <div style="width: 2px; height: 40px; background: #cbd5e1;"></div>
+
+                        <!-- AI 에이전트 2 노드 -->
+                        <div style="background: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 2px solid #e5e7eb; width: 320px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 18px;">🤖</span>
+                                    <span style="font-weight: 600; color: #1f2937; font-size: 15px;">AI 에이전트 2</span>
+                                </div>
+                                <button style="width: 24px; height: 24px; border: none; background: transparent; cursor: pointer; color: #9ca3af; font-size: 16px;">⋮</button>
+                            </div>
+                            <div style="padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 8px;">
+                                <div style="font-size: 13px; color: #6b7280; margin-bottom: 4px;">에어 발송</div>
+                            </div>
+                            <div style="padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 12px;">
+                                <div style="font-size: 13px; color: #6b7280;">대화 종료</div>
+                            </div>
+                            <button style="width: 100%; padding: 8px; border: 1px solid #3b82f6; background: white; color: #3b82f6; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">🔗 AI 에이전트 블록 설정</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <!-- 대시보드 및 사용자분석 페이지 -->
+            <div id="dashboard" class="page">
+                <!-- 헤더 -->
+                <div style="padding: 20px 32px; background: white; border-bottom: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h1 style="font-size: 24px; font-weight: 700; color: #1e293b;">대시보드 및 사용자 분석</h1>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <select style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 14px; cursor: pointer; min-width: 150px;">
+                                <option>고객센터 챗봇</option>
+                                <option>쇼핑몰 상담봇</option>
+                                <option>예약 관리 봇</option>
+                                <option>HR 헬프데스크</option>
+                            </select>
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난 1일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난 7일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #3b82f6; background: #eff6ff; color: #3b82f6; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">지난 30일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난 100일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난날</button>
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px;">
+                                <span>📅</span>
+                                <span style="font-size: 14px;">2026.01.29 - 2026.02.03</span>
+                            </div>
+                            <button style="padding: 8px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">조회</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 탭 메뉴 -->
+                <div style="background: white; padding: 0 32px;">
+                    <div style="display: flex; gap: 8px; border-bottom: 2px solid #e5e7eb;">
+                        <button style="padding: 12px 24px; background: white; border: none; border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: 600; font-size: 14px; cursor: pointer; margin-bottom: -2px;">
+                            대시보드
+                        </button>
+                        <button style="padding: 12px 24px; background: white; border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 500; font-size: 14px; cursor: pointer; margin-bottom: -2px;">
+                            사용자 통계
+                        </button>
+                        <button style="padding: 12px 24px; background: white; border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 500; font-size: 14px; cursor: pointer; margin-bottom: -2px;">
+                            월간 사용자 리포트
+                        </button>
+                    </div>
+                </div>
+
+                <div style="padding: 24px 32px; background: #f9fafb;">
+                    <!-- 통계 카드 그리드 -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px;">
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                                <div>
+                                    <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">누적 사용자 ⓘ</div>
+                                    <div style="font-size: 12px; color: #9ca3af;">2026.01.23 ~ 2026.01.28 대비</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 36px; font-weight: 700; color: #1f2937; margin-bottom: 8px;">1</div>
+                            <div style="font-size: 14px; color: #6b7280;">0%</div>
+                        </div>
+
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                                <div>
+                                    <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">활성 사용자 ⓘ</div>
+                                    <div style="font-size: 12px; color: #9ca3af;">2026.01.23 ~ 2026.01.28 대비</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 36px; font-weight: 700; color: #1f2937; margin-bottom: 8px;">2</div>
+                            <div style="font-size: 14px; color: #6b7280;">0%</div>
+                        </div>
+
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                                <div>
+                                    <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">일 평균 사용자 ⓘ</div>
+                                    <div style="font-size: 12px; color: #9ca3af;">2026.01.23 ~ 2026.01.28 대비</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 36px; font-weight: 700; color: #1f2937; margin-bottom: 8px;">0.33</div>
+                            <div style="font-size: 14px; color: #6b7280;">0%</div>
+                        </div>
+
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                            <div style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">최근 사용자가 가장 많았던 날</div>
+                            <div style="font-size: 36px; font-weight: 700; color: #1f2937;">2/2 월요일</div>
+                        </div>
+                    </div>
+
+                    <!-- 하단 그리드 -->
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                        <!-- 시나리오 호출 Top 3 -->
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="font-size: 16px; font-weight: 600; color: #1f2937;">시나리오 호출 Top 3 ⓘ</h3>
+                                <button style="padding: 6px 12px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; cursor: pointer;">더보기</button>
+                            </div>
+                            <table style="width: 100%;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                                        <th style="text-align: left; padding: 12px 0; font-size: 13px; color: #6b7280; font-weight: 500;">시나리오 명</th>
+                                        <th style="text-align: right; padding: 12px 0; font-size: 13px; color: #6b7280; font-weight: 500;">호출 횟수</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                                        <td style="padding: 16px 0; font-size: 14px; color: #1f2937;">헤스퍼</td>
+                                        <td style="text-align: right; padding: 16px 0; font-size: 14px; color: #1f2937;">3</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                                        <td style="padding: 16px 0; font-size: 14px; color: #1f2937;">인사말</td>
+                                        <td style="text-align: right; padding: 16px 0; font-size: 14px; color: #1f2937;">3</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 16px 0; font-size: 14px; color: #1f2937;">에이블로그</td>
+                                        <td style="text-align: right; padding: 16px 0; font-size: 14px; color: #1f2937;">2</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 시나리오 이탈 Top 3 -->
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="font-size: 16px; font-weight: 600; color: #1f2937;">시나리오 이탈 Top 3 ⓘ</h3>
+                                <button style="padding: 6px 12px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; cursor: pointer;">더보기</button>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; height: 150px; color: #9ca3af; font-size: 14px;">
+                                조회 기간에 해당 데이터가 없습니다.
+                            </div>
+                        </div>
+
+                        <!-- 주요 키워드 -->
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="font-size: 16px; font-weight: 600; color: #1f2937;">주요 키워드 ⓘ</h3>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; height: 150px; color: #9ca3af; font-size: 14px;">
+                                조회 기간에 해당 데이터가 없습니다.
+                            </div>
+                        </div>
+
+                        <!-- 주요 키워드 Top 10 -->
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="font-size: 16px; font-weight: 600; color: #1f2937;">주요 키워드 Top 10 ⓘ</h3>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; height: 150px; color: #9ca3af; font-size: 14px;">
+                                조회 기간에 해당 데이터가 없습니다.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 시나리오 운영 페이지 -->
+            <div id="scenario-operation" class="page">
+                <!-- 헤더 -->
+                <div style="padding: 20px 32px; background: white; border-bottom: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h1 style="font-size: 24px; font-weight: 700; color: #1e293b;">시나리오 운영</h1>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난 1일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #3b82f6; background: #eff6ff; color: #3b82f6; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">지난 7일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난 30일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난 100일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난날</button>
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px;">
+                                <span>📅</span>
+                                <span style="font-size: 14px;">2026.01.29 - 2026.02.04</span>
+                            </div>
+                            <button style="padding: 8px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">조회</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 탭 메뉴 -->
+                <div style="background: white; padding: 0 32px;">
+                    <div style="display: flex; gap: 8px; border-bottom: 2px solid #e5e7eb;">
+                        <button style="padding: 12px 24px; background: white; border: none; border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: 600; font-size: 14px; cursor: pointer; margin-bottom: -2px;">
+                            시나리오호출빈도
+                        </button>
+                        <button style="padding: 12px 24px; background: white; border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 500; font-size: 14px; cursor: pointer; margin-bottom: -2px;">
+                            대화 이탈
+                        </button>
+                    </div>
+                </div>
+
+                <div style="padding: 24px 32px; background: #f9fafb;">
+                    <!-- 시나리오 호출 차트 -->
+                    <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="font-size: 16px; font-weight: 600; color: #1f2937;">시나리오 호출 ⓘ</h3>
+                        </div>
+                        
+                        <!-- 차트 영역 -->
+                        <div style="height: 300px; background: #f8f9fa; border-radius: 8px; padding: 20px; position: relative;">
+                            <!-- Y축 레이블 -->
+                            <div style="position: absolute; left: 20px; top: 20px; bottom: 60px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; color: #6b7280;">
+                                <div>8</div>
+                                <div>6</div>
+                                <div>4</div>
+                                <div>2</div>
+                                <div>0</div>
+                            </div>
+                            
+                            <!-- 차트 이미지 -->
+                            <div style="margin-left: 40px; height: 100%; display: flex; align-items: center; justify-content: center; color: #9ca3af;">
+                                시나리오 호출 추이 차트
+                            </div>
+                            
+                            <!-- 범례 -->
+                            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; font-size: 12px;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div style="width: 12px; height: 12px; background: #3b82f6; border-radius: 50%;"></div>
+                                    <span>전체 시나리오</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div style="width: 12px; height: 12px; background: #93c5fd; border-radius: 50%;"></div>
+                                    <span>실패 시나리오</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div style="width: 12px; height: 12px; background: #d1d5db; border-radius: 50%;"></div>
+                                    <span>인사말</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 시나리오별 호출 빈도 테이블 -->
+                    <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="font-size: 16px; font-weight: 600; color: #1f2937;">시나리오별 호출 빈도 ⓘ</h3>
+                            <button style="padding: 6px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; cursor: pointer; color: #3b82f6;">다운로드</button>
+                        </div>
+
+                        <!-- 테이블 -->
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #e5e7eb;">
+                                    <th style="text-align: left; padding: 12px 16px; font-size: 14px; font-weight: 600; color: #6b7280;">시나리오명</th>
+                                    <th style="text-align: left; padding: 12px 16px; font-size: 14px; font-weight: 600; color: #6b7280;">시나리오 아이디</th>
+                                    <th style="text-align: right; padding: 12px 16px; font-size: 14px; font-weight: 600; color: #6b7280;">호출 빈도 ↓</th>
+                                    <th style="text-align: right; padding: 12px 16px; font-size: 14px; font-weight: 600; color: #6b7280;">비율</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Row 1 -->
+                                <tr style="border-bottom: 1px solid #f3f4f6;">
+                                    <td style="padding: 16px; font-size: 14px; color: #3b82f6; font-weight: 500;">전체</td>
+                                    <td style="padding: 16px; font-size: 14px; color: #6b7280;">-</td>
+                                    <td style="text-align: right; padding: 16px; font-size: 14px; color: #1f2937; font-weight: 500;">8</td>
+                                    <td style="text-align: right; padding: 16px; font-size: 14px; color: #1f2937; font-weight: 500;">100%</td>
+                                </tr>
+                                <!-- Row 2 -->
+                                <tr style="border-bottom: 1px solid #f3f4f6;">
+                                    <td style="padding: 16px; font-size: 14px; color: #1f2937;">헤스퍼</td>
+                                    <td style="padding: 16px; font-size: 14px; color: #6b7280;">697aedc7f5298dfabe3bbdff9</td>
+                                    <td style="text-align: right; padding: 16px; font-size: 14px; color: #1f2937;">3</td>
+                                    <td style="text-align: right; padding: 16px; font-size: 14px; color: #1f2937;">37.5%</td>
+                                </tr>
+                                <!-- Row 3 -->
+                                <tr style="border-bottom: 1px solid #f3f4f6;">
+                                    <td style="padding: 16px; font-size: 14px; color: #1f2937;">인사말</td>
+                                    <td style="padding: 16px; font-size: 14px; color: #6b7280;">697ac9702c100b53d67c1bd8</td>
+                                    <td style="text-align: right; padding: 16px; font-size: 14px; color: #1f2937;">3</td>
+                                    <td style="text-align: right; padding: 16px; font-size: 14px; color: #1f2937;">37.5%</td>
+                                </tr>
+                                <!-- Row 4 -->
+                                <tr>
+                                    <td style="padding: 16px; font-size: 14px; color: #1f2937;">에이블로그</td>
+                                    <td style="padding: 16px; font-size: 14px; color: #6b7280;">697ac9702c100b53d67c1bd9</td>
+                                    <td style="text-align: right; padding: 16px; font-size: 14px; color: #1f2937;">2</td>
+                                    <td style="text-align: right; padding: 16px; font-size: 14px; color: #1f2937;">25%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 데이터 도구 페이지 -->
+            <div id="data-tools" class="page">
+                <!-- 헤더 -->
+                <div style="padding: 20px 32px; background: white; border-bottom: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h1 style="font-size: 24px; font-weight: 700; color: #1e293b;">데이터 도구 <span style="font-size: 18px; color: #6b7280;">ⓘ</span></h1>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난 1일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #3b82f6; background: #eff6ff; color: #3b82f6; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">지난 7일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난 30일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난 100일</button>
+                            <button style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">지난날</button>
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px;">
+                                <span>📅</span>
+                                <span style="font-size: 14px;">2026.01.29 - 2026.02.04</span>
+                            </div>
+                            <select style="padding: 8px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 14px; cursor: pointer; min-width: 180px;">
+                                <option>제외별 사용자 데이터</option>
+                                <option>전체 사용자 데이터</option>
+                                <option>활성 사용자 데이터</option>
+                            </select>
+                            <button style="padding: 8px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">파일생성</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 탭 메뉴 -->
+                <div style="background: white; padding: 0 32px;">
+                    <div style="display: flex; gap: 8px; border-bottom: 2px solid #e5e7eb;">
+                        <button style="padding: 12px 24px; background: white; border: none; border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: 600; font-size: 14px; cursor: pointer; margin-bottom: -2px;">
+                            데이터 다운로드
+                        </button>
+                    </div>
+                </div>
+
+                <div style="padding: 24px 32px; background: #f9fafb;">
+                    <!-- 보고서 다운로드 섹션 -->
+                    <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="font-size: 16px; font-weight: 600; color: #1f2937;">보고서 다운로드 <span style="color: #6b7280;">ⓘ</span></h3>
+                            <button style="padding: 6px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; cursor: pointer; color: #3b82f6;">실패 파일 다운로드</button>
+                        </div>
+
+                        <!-- 테이블 -->
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #e5e7eb;">
+                                    <th style="text-align: left; padding: 12px 16px; font-size: 14px; font-weight: 600; color: #6b7280;">요청일시</th>
+                                    <th style="text-align: left; padding: 12px 16px; font-size: 14px; font-weight: 600; color: #6b7280;">요청파일명</th>
+                                    <th style="text-align: center; padding: 12px 16px; font-size: 14px; font-weight: 600; color: #6b7280;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Row 1 -->
+                                <tr style="border-bottom: 1px solid #f3f4f6;">
+                                    <td style="padding: 16px; font-size: 14px; color: #1f2937;">2026-02-05 16:34:37</td>
+                                    <td style="padding: 16px; font-size: 14px; color: #1f2937;">202601292026204_제외별 사용자 데이터.xlsx</td>
+                                    <td style="text-align: center; padding: 16px;">
+                                        <input type="checkbox" style="width: 16px; height: 16px; cursor: pointer;">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- 페이지네이션 -->
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 8px; padding: 20px; margin-top: 20px;">
+                            <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #9ca3af;">‹</button>
+                            <button style="width: 32px; height: 32px; border: 1px solid #3b82f6; background: #3b82f6; color: white; border-radius: 6px; font-weight: 500;">1</button>
+                            <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #9ca3af;">›</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 로그인 내역 페이지 -->
+            <div id="login-history" class="page">
+                <div style="padding: 24px 32px; max-width: 1400px; margin: 0 auto;">
+                    <!-- 헤더 -->
+                    <div style="margin-bottom: 32px;">
+                        <h1 style="font-size: 28px; font-weight: 700; color: #1f2937;">로그인 내역</h1>
+                    </div>
+
+                    <!-- 데이터 테이블 -->
+                    <div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden;">
+                        <!-- 테이블 헤더 -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; border-bottom: 2px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #6b7280; background: #f9fafb;">
+                            <div>Group</div>
+                            <div>Action</div>
+                            <div>Method</div>
+                            <div>IP</div>
+                            <div>Time</div>
+                        </div>
+
+                        <!-- 테이블 데이터 -->
+                        <div>
+                            <!-- Row 1 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1f2937;">
+                                <div>AUTH</div>
+                                <div>LOGIN</div>
+                                <div>POST</div>
+                                <div>10.0.2.9</div>
+                                <div>2026/02/04 11:42:24</div>
+                            </div>
+
+                            <!-- Row 2 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1f2937;">
+                                <div>AUTH</div>
+                                <div>LOGIN</div>
+                                <div>POST</div>
+                                <div>10.0.2.10</div>
+                                <div>2026/02/04 11:42:19</div>
+                            </div>
+
+                            <!-- Row 3 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1f2937;">
+                                <div>AUTH</div>
+                                <div>LOGIN</div>
+                                <div>POST</div>
+                                <div>203.229.152.169</div>
+                                <div>2026/02/04 11:08:01</div>
+                            </div>
+
+                            <!-- Row 4 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1f2937;">
+                                <div>AUTH</div>
+                                <div>LOGIN</div>
+                                <div>POST</div>
+                                <div>10.0.2.10</div>
+                                <div>2026/02/04 11:08:01</div>
+                            </div>
+
+                            <!-- Row 5 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1f2937;">
+                                <div>AUTH</div>
+                                <div>LOGIN</div>
+                                <div>POST</div>
+                                <div>203.229.152.169</div>
+                                <div>2026/02/04 11:07:53</div>
+                            </div>
+
+                            <!-- Row 6 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1f2937;">
+                                <div>AUTH</div>
+                                <div>LOGIN</div>
+                                <div>POST</div>
+                                <div>10.0.2.10</div>
+                                <div>2026/02/04 11:07:52</div>
+                            </div>
+
+                            <!-- Row 7 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1f2937;">
+                                <div>AUTH</div>
+                                <div>LOGIN</div>
+                                <div>POST</div>
+                                <div>10.0.2.9</div>
+                                <div>2026/02/04 11:06:34</div>
+                            </div>
+
+                            <!-- Row 8 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1f2937;">
+                                <div>AUTH</div>
+                                <div>LOGIN</div>
+                                <div>POST</div>
+                                <div>10.0.2.10</div>
+                                <div>2026/02/04 11:04:25</div>
+                            </div>
+
+                            <!-- Row 9 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1f2937;">
+                                <div>AUTH</div>
+                                <div>LOGIN</div>
+                                <div>POST</div>
+                                <div>203.229.152.169</div>
+                                <div>2026/02/03 17:11:21</div>
+                            </div>
+
+                            <!-- Row 10 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 2fr; gap: 16px; padding: 16px 24px; font-size: 14px; color: #1f2937;">
+                                <div>AUTH</div>
+                                <div>LOGIN</div>
+                                <div>POST</div>
+                                <div>10.0.2.10</div>
+                                <div>2026/02/03 17:11:21</div>
+                            </div>
+                        </div>
+
+                        <!-- 페이지네이션 -->
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 8px; padding: 20px; border-top: 1px solid #e5e7eb;">
+                            <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #9ca3af;">«</button>
+                            <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #9ca3af;">‹</button>
+                            <button style="width: 32px; height: 32px; border: 1px solid #3b82f6; background: #3b82f6; color: white; border-radius: 6px; font-weight: 500;">1</button>
+                            <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #6b7280;">2</button>
+                            <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #9ca3af;">›</button>
+                            <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #9ca3af;">»</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 개발자 도구 페이지 -->
+            <div id="developer-tools" class="page">
+                <div style="display: flex; height: calc(100vh - 64px);">
+                    <!-- 왼쪽 사이드바 -->
+                    <div style="width: 200px; background: white; border-right: 1px solid #e5e7eb; padding: 24px 16px;">
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 20px;">도구</h3>
+                        
+                        <!-- 전체 도구 -->
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #eff6ff; border-radius: 6px; cursor: pointer;">
+                                <span style="font-size: 14px; font-weight: 500; color: #3b82f6;">전체 도구</span>
+                                <span style="font-size: 12px; color: #3b82f6;">0</span>
+                            </div>
+                        </div>
+
+                        <!-- 기본 폴더 -->
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 14px;">📁</span>
+                                    <span style="font-size: 14px; color: #6b7280;">기본 폴더</span>
+                                </div>
+                                <span style="font-size: 12px; color: #9ca3af;">0</span>
+                            </div>
+                        </div>
+
+                        <!-- 폴더 추가 버튼 -->
+                        <button style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; background: white; color: #6b7280; border-radius: 6px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                            <span>+</span>
+                            <span>폴더 추가</span>
+                        </button>
+                    </div>
+
+                    <!-- 메인 컨텐츠 영역 -->
+                    <div style="flex: 1; background: #f9fafb; overflow: auto;">
+                        <div style="padding: 32px;">
+                            <!-- 헤더 -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                                <h1 style="font-size: 28px; font-weight: 700; color: #1f2937;">전체 도구</h1>
+                                <button style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                    <span>+</span>
+                                    <span>새 도구 추가</span>
+                                </button>
+                            </div>
+
+                            <!-- 필터 영역 -->
+                            <div style="background: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e5e7eb;">
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                                    <div>
+                                        <label style="display: block; font-size: 13px; color: #6b7280; margin-bottom: 8px;">폴더</label>
+                                        <select style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                                            <option>전체</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 13px; color: #6b7280; margin-bottom: 8px;">메서드</label>
+                                        <select style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                                            <option>전체</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 13px; color: #6b7280; margin-bottom: 8px;">사용 상태</label>
+                                        <select style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                                            <option>전체</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 도구 검색 -->
+                            <div style="background: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 12px;">
+                                <span style="color: #9ca3af;">🔍</span>
+                                <input type="text" placeholder="도구명 검색" style="flex: 1; border: none; outline: none; font-size: 14px; color: #1f2937;" />
+                            </div>
+
+                            <!-- 데이터 테이블 -->
+                            <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                                <!-- 테이블 헤더 -->
+                                <div style="display: grid; grid-template-columns: 40px 1fr 100px 150px 100px 120px 100px 100px; gap: 12px; padding: 16px; border-bottom: 1px solid #e5e7eb; font-size: 13px; font-weight: 500; color: #6b7280;">
+                                    <div style="display: flex; align-items: center; justify-content: center;">
+                                        <input type="checkbox" style="cursor: pointer;" />
+                                    </div>
+                                    <div>플러그명</div>
+                                    <div>도구명</div>
+                                    <div>도구 프롬프트</div>
+                                    <div>메서드</div>
+                                    <div>인증명</div>
+                                    <div>사용 여부</div>
+                                    <div>업데이트 일자</div>
+                                    <div>사용 상태</div>
+                                </div>
+
+                                <!-- Empty State -->
+                                <div style="padding: 80px 20px; text-align: center;">
+                                    <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">📋</div>
+                                    <div style="font-size: 16px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">등록된 도구가 없습니다.</div>
+                                    <div style="font-size: 14px; color: #9ca3af;">새 도구를 추가하여 시작하세요</div>
+                                </div>
+
+                                <!-- 페이지네이션 -->
+                                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; padding: 20px; border-top: 1px solid #e5e7eb;">
+                                    <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #9ca3af;">«</button>
+                                    <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #9ca3af;">‹</button>
+                                    <button style="width: 32px; height: 32px; border: 1px solid #3b82f6; background: #3b82f6; color: white; border-radius: 6px; font-weight: 500;">1</button>
+                                    <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #9ca3af;">›</button>
+                                    <button style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #9ca3af;">»</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div id="settingsModal" class="settings-modal-overlay" onclick="closeSettingsModalOnOverlay(event)">
+        <div class="settings-modal-container" onclick="event.stopPropagation()">
+            <div class="settings-modal-header">
+                <button class="settings-tab active" onclick="switchSettingsTab(this, 'basic')">기본설정</button>
+                <button class="settings-tab" onclick="switchSettingsTab(this, 'counselor')">상담시간</button>
+                <button class="settings-tab" onclick="switchSettingsTab(this, 'login')">인증</button>
+                <button class="settings-tab" onclick="switchSettingsTab(this, 'ticket')">커스텀</button>
+                <button class="settings-tab" onclick="switchSettingsTab(this, 'image')">이미지 등록실패</button>
+                <button class="settings-tab" onclick="switchSettingsTab(this, 'system')">시스템 문구</button>
+                <button class="settings-tab" onclick="switchSettingsTab(this, 'security')">보안</button>
+                <button class="settings-modal-close" onclick="closeSettingsModal()">✕</button>
+            </div>
+            
+            <div class="settings-modal-body">
+                <!-- 기본설정 탭 -->
+                <div id="settings-basic" class="settings-tab-content">
+                    <div class="settings-content-wrapper">
+                        <h2 class="settings-section-title">기본설정</h2>
+                        <p class="settings-section-desc">이 설정 페이지에서 관련 옵션을 구성할 수 있습니다.</p>
+                        
+                        <div class="settings-placeholder-box">
+                            <div class="settings-placeholder-icon">⚙️</div>
+                            <div class="settings-placeholder-text">설정 컨텐츠가 표시됩니다</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 상담시간 탭 -->
+                <div id="settings-counselor" class="settings-tab-content" style="display: none;">
+                    <div class="settings-content-wrapper">
+                        <h2 class="settings-section-title">상담시간</h2>
+                        <p class="settings-section-desc">상담 가능 시간을 설정하세요.</p>
+                        
+                        <div class="settings-placeholder-box">
+                            <div class="settings-placeholder-icon">🕐</div>
+                            <div class="settings-placeholder-text">상담시간 설정 컨텐츠가 표시됩니다</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 인증 탭 -->
+                <div id="settings-login" class="settings-tab-content" style="display: none;">
+                    <div class="settings-content-wrapper">
+                        <h2 class="settings-section-title">인증</h2>
+                        <p class="settings-section-desc">사용자 인증 설정을 관리하세요.</p>
+                        
+                        <div class="settings-placeholder-box">
+                            <div class="settings-placeholder-icon">🔐</div>
+                            <div class="settings-placeholder-text">인증 설정 컨텐츠가 표시됩니다</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 커스텀 탭 -->
+                <div id="settings-ticket" class="settings-tab-content" style="display: none;">
+                    <div class="settings-content-wrapper">
+                        <h2 class="settings-section-title">커스텀</h2>
+                        <p class="settings-section-desc">커스텀 설정을 구성하세요.</p>
+                        
+                        <div class="settings-placeholder-box">
+                            <div class="settings-placeholder-icon">🎨</div>
+                            <div class="settings-placeholder-text">커스텀 설정 컨텐츠가 표시됩니다</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 이미지 등록실패 탭 -->
+                <div id="settings-image" class="settings-tab-content" style="display: none;">
+                    <div class="settings-content-wrapper">
+                        <h2 class="settings-section-title">이미지 등록실패</h2>
+                        <p class="settings-section-desc">이미지 등록 실패 시 처리 방법을 설정하세요.</p>
+                        
+                        <div class="settings-placeholder-box">
+                            <div class="settings-placeholder-icon">🖼️</div>
+                            <div class="settings-placeholder-text">이미지 설정 컨텐츠가 표시됩니다</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 시스템 문구 탭 -->
+                <div id="settings-system" class="settings-tab-content" style="display: none;">
+                    <div class="settings-content-wrapper">
+                        <h2 class="settings-section-title">시스템 문구</h2>
+                        <p class="settings-section-desc">시스템 메시지 문구를 설정하세요.</p>
+                        
+                        <div class="settings-placeholder-box">
+                            <div class="settings-placeholder-icon">💬</div>
+                            <div class="settings-placeholder-text">시스템 문구 설정 컨텐츠가 표시됩니다</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 보안 탭 -->
+                <div id="settings-security" class="settings-tab-content" style="display: none;">
+                    <div class="settings-content-wrapper">
+                        <h2 class="settings-section-title">보안</h2>
+                        <p class="settings-section-desc">보안 관련 설정을 관리하세요.</p>
+                        
+                        <div class="settings-placeholder-box">
+                            <div class="settings-placeholder-icon">🔒</div>
+                            <div class="settings-placeholder-text">보안 설정 컨텐츠가 표시됩니다</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 메뉴 그룹 펼치기/접기
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.nav-group-header').forEach(header => {
+                header.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const group = this.closest('.nav-group');
+                    const wasExpanded = group.classList.contains('expanded');
+                    
+                    // 모든 그룹 접기
+                    document.querySelectorAll('.nav-group').forEach(g => {
+                        g.classList.remove('expanded');
+                    });
+                    document.querySelectorAll('.nav-group-header').forEach(h => {
+                        h.classList.remove('active');
+                    });
+                    
+                    // 클릭한 그룹만 펼치기
+                    if (!wasExpanded) {
+                        group.classList.add('expanded');
+                        this.classList.add('active');
+                    }
+                });
+            });
+
+            // 서브메뉴 클릭
+            document.querySelectorAll('.nav-subitem').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.nav-subitem').forEach(i => {
+                        i.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                });
+            });
+
+            // 첫 번째 그룹 펼치기
+            const firstGroup = document.querySelector('.nav-group');
+            if (firstGroup) {
+                firstGroup.classList.add('expanded');
+                firstGroup.querySelector('.nav-group-header').classList.add('active');
+            }
+        });
+
+        function showPage(pageId) {
+            // 모든 페이지 숨기기
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // 선택한 페이지 표시
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        function toggleStar(starElement, event) {
+            event.stopPropagation();
+            
+            if (starElement.classList.contains('active')) {
+                starElement.classList.remove('active');
+                starElement.textContent = '☆';
+            } else {
+                starElement.classList.add('active');
+                starElement.textContent = '★';
+            }
+        }
+
+        // 설정 모달 함수
+        function openSettingsModal() {
+            document.getElementById('settingsModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function closeSettingsModalOnOverlay(event) {
+            if (event.target === event.currentTarget) {
+                closeSettingsModal();
+            }
+        }
+
+        function switchSettingsTab(tabElement, tabId) {
+            // 모든 탭 비활성화
+            document.querySelectorAll('.settings-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 클릭한 탭 활성화
+            tabElement.classList.add('active');
+            
+            // 모든 탭 컨텐츠 숨기기
+            document.querySelectorAll('.settings-tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // 선택한 탭 컨텐츠 표시
+            const targetContent = document.getElementById('settings-' + tabId);
+            if (targetContent) {
+                targetContent.style.display = 'block';
+            }
+        }
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('settingsModal');
+                if (modal && modal.classList.contains('active')) {
+                    closeSettingsModal();
+                }
+            }
+        });
+        // 모달 관련 함수
+        function openCreateProjectModal() {
+            document.getElementById('createProjectModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCreateProjectModal() {
+            document.getElementById('createProjectModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            // 폼 초기화
+            document.getElementById('projectName').value = '';
+            document.getElementById('projectType').value = '';
+            updateCharCount();
+        }
+
+        function closeModalOnOverlay(event) {
+            if (event.target === event.currentTarget) {
+                closeCreateProjectModal();
+            }
+        }
+
+        function updateCharCount() {
+            const input = document.getElementById('projectName');
+            const count = document.getElementById('charCount');
+            const confirmBtn = document.getElementById('confirmBtn');
+            
+            count.textContent = input.value.length;
+            
+            // 이름이 입력되면 확인 버튼 활성화
+            if (input.value.trim().length > 0) {
+                confirmBtn.disabled = false;
+            } else {
+                confirmBtn.disabled = true;
+            }
+        }
+
+        function createProject() {
+            const projectName = document.getElementById('projectName').value;
+            const projectType = document.getElementById('projectType').value;
+            
+            if (projectName.trim()) {
+                alert(`프로젝트 생성됨!\n이름: ${projectName}\n유형: ${projectType || '미선택'}`);
+                closeCreateProjectModal();
+            }
+        }
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('createProjectModal');
+                if (modal.classList.contains('active')) {
+                    closeCreateProjectModal();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
