@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>설정 팝업 - 2단계 탭</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .settings-popup {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .popup-header {
+            padding: 24px 24px 0 24px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .popup-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #6b7280;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: #6b7280;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover {
+            color: #374151;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        /* 서브 탭 영역 */
+        .sub-tabs-area {
+            background: #f9fafb;
+            padding: 12px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: none;
+        }
+
+        .sub-tabs-area.active {
+            display: block;
+        }
+
+        .sub-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .sub-tab {
+            padding: 6px 14px;
+            background: white;
+            border: 1px solid #d1d5db;
+            color: #6b7280;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .sub-tab:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .sub-tab.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .popup-content {
+            padding: 24px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .sub-panel {
+            display: none;
+        }
+
+        .sub-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .setting-item {
+            padding: 16px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .setting-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .setting-description {
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            background: #d1d5db;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #667eea;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(22px);
+        }
+
+        .select-box {
+            width: 100%;
+            padding: 10px 12px;
+            margin-top: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1f2937;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .select-box:hover {
+            border-color: #667eea;
+        }
+
+        .select-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 10px 12px;
+            margin-top: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1f2937;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+        <div class="settings-popup">
+            <div class="popup-header">
+                <div class="header-top">
+                    <h2 class="popup-title">설정</h2>
+                    <button class="close-btn" onclick="closePopup()">×</button>
+                </div>
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab(0)">일반</button>
+                    <button class="tab" onclick="switchTab(1)">알림</button>
+                    <button class="tab" onclick="switchTab(2)">계정</button>
+                    <button class="tab" onclick="switchTab(3)">고급</button>
+                </div>
+            </div>
+
+            <!-- 서브 탭 영역들 -->
+            <div class="sub-tabs-area active" data-for-tab="0">
+                <div class="sub-tabs">
+                    <button class="sub-tab active" onclick="switchSubTab(0, 0)">언어 설정</button>
+                    <button class="sub-tab" onclick="switchSubTab(0, 1)">시스템</button>
+                    <button class="sub-tab" onclick="switchSubTab(0, 2)">업데이트</button>
+                </div>
+            </div>
+
+            <div class="sub-tabs-area" data-for-tab="1">
+                <div class="sub-tabs">
+                    <button class="sub-tab active" onclick="switchSubTab(1, 0)">푸시 알림</button>
+                    <button class="sub-tab" onclick="switchSubTab(1, 1)">이메일</button>
+                    <button class="sub-tab" onclick="switchSubTab(1, 2)">소리 및 진동</button>
+                </div>
+            </div>
+
+            <div class="sub-tabs-area" data-for-tab="2">
+                <div class="sub-tabs">
+                    <button class="sub-tab active" onclick="switchSubTab(2, 0)">프로필</button>
+                    <button class="sub-tab" onclick="switchSubTab(2, 1)">보안</button>
+                </div>
+            </div>
+
+            <div class="sub-tabs-area" data-for-tab="3">
+                <div class="sub-tabs">
+                    <button class="sub-tab active" onclick="switchSubTab(3, 0)">개발자</button>
+                    <button class="sub-tab" onclick="switchSubTab(3, 1)">캐시</button>
+                </div>
+            </div>
+
+            <div class="popup-content">
+                <!-- 일반 탭 -->
+                <div class="tab-panel active">
+                    <!-- 언어 설정 서브 패널 -->
+                    <div class="sub-panel active">
+                        <div class="setting-item">
+                            <div class="setting-label">언어</div>
+                            <div class="setting-description">인터페이스 언어를 선택하세요</div>
+                            <select class="select-box">
+                                <option>한국어</option>
+                                <option>English</option>
+                                <option>日本語</option>
+                                <option>中文</option>
+                            </select>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">날짜 형식</div>
+                            <select class="select-box">
+                                <option>YYYY-MM-DD</option>
+                                <option>DD/MM/YYYY</option>
+                                <option>MM/DD/YYYY</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 시스템 서브 패널 -->
+                    <div class="sub-panel">
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">다크 모드</div>
+                                    <div class="setting-description">화면 테마를 어둡게 설정합니다</div>
+                                </div>
+                                <div class="toggle-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">시작 시 자동 실행</div>
+                                    <div class="setting-description">시스템 부팅 시 자동으로 실행됩니다</div>
+                                </div>
+                                <div class="toggle-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 업데이트 서브 패널 -->
+                    <div class="sub-panel">
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">자동 업데이트</div>
+                                    <div class="setting-description">새 버전이 출시되면 자동으로 업데이트합니다</div>
+                                </div>
+                                <div class="toggle-switch active" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">업데이트 채널</div>
+                            <select class="select-box">
+                                <option>안정 버전</option>
+                                <option>베타 버전</option>
+                                <option>개발자 버전</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 알림 탭 -->
+                <div class="tab-panel">
+                    <!-- 푸시 알림 서브 패널 -->
+                    <div class="sub-panel active">
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">푸시 알림</div>
+                                    <div class="setting-description">모바일 푸시 알림을 받습니다</div>
+                                </div>
+                                <div class="toggle-switch active" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">배지 표시</div>
+                                    <div class="setting-description">앱 아이콘에 알림 개수를 표시합니다</div>
+                                </div>
+                                <div class="toggle-switch active" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 이메일 서브 패널 -->
+                    <div class="sub-panel">
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">이메일 알림</div>
+                                    <div class="setting-description">중요한 업데이트를 이메일로 받습니다</div>
+                                </div>
+                                <div class="toggle-switch active" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">주간 리포트</div>
+                                    <div class="setting-description">매주 활동 요약을 이메일로 받습니다</div>
+                                </div>
+                                <div class="toggle-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 소리 및 진동 서브 패널 -->
+                    <div class="sub-panel">
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">소리</div>
+                                    <div class="setting-description">알림음을 재생합니다</div>
+                                </div>
+                                <div class="toggle-switch active" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">진동</div>
+                                    <div class="setting-description">알림 시 진동을 사용합니다</div>
+                                </div>
+                                <div class="toggle-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 계정 탭 -->
+                <div class="tab-panel">
+                    <!-- 프로필 서브 패널 -->
+                    <div class="sub-panel active">
+                        <div class="setting-item">
+                            <div class="setting-label">사용자 이름</div>
+                            <input type="text" class="input-field" value="홍길동" placeholder="사용자 이름을 입력하세요">
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">이메일 주소</div>
+                            <input type="email" class="input-field" value="user@example.com" placeholder="이메일 주소를 입력하세요">
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">전화번호</div>
+                            <input type="tel" class="input-field" value="010-1234-5678" placeholder="전화번호를 입력하세요">
+                        </div>
+                    </div>
+
+                    <!-- 보안 서브 패널 -->
+                    <div class="sub-panel">
+                        <div class="setting-item">
+                            <div class="setting-label">비밀번호 변경</div>
+                            <input type="password" class="input-field" placeholder="현재 비밀번호">
+                            <input type="password" class="input-field" placeholder="새 비밀번호">
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">2단계 인증</div>
+                                    <div class="setting-description">추가 보안 레이어를 활성화합니다</div>
+                                </div>
+                                <div class="toggle-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 고급 탭 -->
+                <div class="tab-panel">
+                    <!-- 개발자 서브 패널 -->
+                    <div class="sub-panel active">
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">개발자 모드</div>
+                                    <div class="setting-description">고급 개발자 기능을 활성화합니다</div>
+                                </div>
+                                <div class="toggle-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <div>
+                                    <div class="setting-label">디버그 로그</div>
+                                    <div class="setting-description">상세한 디버그 정보를 기록합니다</div>
+                                </div>
+                                <div class="toggle-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 캐시 서브 패널 -->
+                    <div class="sub-panel">
+                        <div class="setting-item">
+                            <div class="setting-label">캐시 관리</div>
+                            <div class="setting-description">저장된 캐시 데이터를 삭제합니다</div>
+                            <button class="btn btn-secondary" style="margin-top: 8px; width: auto;">캐시 삭제</button>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">데이터 초기화</div>
+                            <div class="setting-description">모든 설정을 초기 상태로 되돌립니다</div>
+                            <button class="btn btn-secondary" style="margin-top: 8px; width: auto; background: #ef4444; color: white;">초기화</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding: 0 24px 24px 24px;">
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="closePopup()">취소</button>
+                    <button class="btn btn-primary" onclick="saveSettings()">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(index) {
+            // 모든 메인 탭과 패널 비활성화
+            const tabs = document.querySelectorAll('.tab');
+            const panels = document.querySelectorAll('.tab-panel');
+            const subTabsAreas = document.querySelectorAll('.sub-tabs-area');
+            
+            tabs.forEach(function(tab) {
+                tab.classList.remove('active');
+            });
+            panels.forEach(function(panel) {
+                panel.classList.remove('active');
+            });
+            subTabsAreas.forEach(function(area) {
+                area.classList.remove('active');
+            });
+            
+            // 선택된 탭과 패널, 서브탭 영역 활성화
+            tabs[index].classList.add('active');
+            panels[index].classList.add('active');
+            subTabsAreas[index].classList.add('active');
+            
+            // 선택된 탭의 첫 번째 서브 패널 활성화
+            const activePanel = panels[index];
+            const subPanels = activePanel.querySelectorAll('.sub-panel');
+            subPanels.forEach(function(subPanel) {
+                subPanel.classList.remove('active');
+            });
+            if (subPanels.length > 0) {
+                subPanels[0].classList.add('active');
+            }
+            
+            // 서브 탭 버튼도 첫 번째로 초기화
+            const activeSubTabsArea = subTabsAreas[index];
+            const subTabButtons = activeSubTabsArea.querySelectorAll('.sub-tab');
+            subTabButtons.forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+            if (subTabButtons.length > 0) {
+                subTabButtons[0].classList.add('active');
+            }
+        }
+
+        function switchSubTab(mainTabIndex, subTabIndex) {
+            // 현재 활성화된 메인 탭의 서브 탭들만 선택
+            const panels = document.querySelectorAll('.tab-panel');
+            const activePanel = panels[mainTabIndex];
+            const subPanels = activePanel.querySelectorAll('.sub-panel');
+            
+            // 모든 서브 패널 비활성화
+            subPanels.forEach(function(panel) {
+                panel.classList.remove('active');
+            });
+            
+            // 선택된 서브 패널 활성화
+            if (subPanels[subTabIndex]) {
+                subPanels[subTabIndex].classList.add('active');
+            }
+            
+            // 서브 탭 버튼 활성화
+            const subTabsAreas = document.querySelectorAll('.sub-tabs-area');
+            const activeSubTabsArea = subTabsAreas[mainTabIndex];
+            const subTabButtons = activeSubTabsArea.querySelectorAll('.sub-tab');
+            
+            subTabButtons.forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+            if (subTabButtons[subTabIndex]) {
+                subTabButtons[subTabIndex].classList.add('active');
+            }
+        }
+
+        function toggleSwitch(element) {
+            element.classList.toggle('active');
+        }
+
+        function closePopup() {
+            const popup = document.querySelector('.settings-popup');
+            popup.style.animation = 'slideDown 0.3s ease-out';
+            setTimeout(function() {
+                alert('팝업이 닫혔습니다');
+            }, 300);
+        }
+
+        function saveSettings() {
+            alert('설정이 저장되었습니다!');
+        }
+    </script>
+</body>
+</html>
